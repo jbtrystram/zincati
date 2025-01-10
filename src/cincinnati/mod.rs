@@ -235,7 +235,10 @@ fn find_update(
         .find(|(_, node)| is_same_checksum(node, &booted_depl.checksum))
     {
         Some(current) => current,
-        None => return Ok(None),
+        None => {
+            log::warn!("current deployment not found in the update graph");
+            return Ok(None);
+        }
     };
     drop(booted_depl);
     let cur_release = Release::from_cincinnati(cur_node.clone())
@@ -333,13 +336,14 @@ fn find_denylisted_releases(graph: &client::Graph, depls: BTreeSet<Release>) -> 
 
 /// Check whether input node matches current checksum.
 fn is_same_checksum(node: &Node, checksum: &str) -> bool {
-    let payload_is_checksum = node
-        .metadata
-        .get(SCHEME_KEY)
-        .map(|v| v == CHECKSUM_SCHEME)
-        .unwrap_or(false);
+    let payload_type = node.metadata.get(SCHEME_KEY);
 
-    payload_is_checksum && node.payload == checksum
+    if let Some(scheme) = payload_type {
+        (scheme.as_str() == OCI_SCHEME || scheme.as_str() == CHECKSUM_SCHEME)
+            && node.payload == checksum
+    } else {
+        false
+    }
 }
 
 /// Check whether input node is a dead-end; if so, return the reason.

@@ -90,8 +90,15 @@ impl Deployment {
 
     /// Return the deployment base revision.
     pub fn base_revision(&self) -> String {
-        self.base_checksum
+        self.container_image_reference
             .clone()
+            .map(|pullspec| {
+                pullspec
+                    .strip_prefix("ostree-unverified-registry:")
+                    .map(|s| s.to_string())
+            })
+            .flatten()
+            .or(self.base_checksum.clone())
             .unwrap_or_else(|| self.checksum.clone())
     }
 }
@@ -104,28 +111,35 @@ pub fn parse_booted(status: &Status) -> Result<Release> {
 
 fn fedora_coreos_stream_from_deployment(deploy: &Deployment) -> Result<String> {
     if deploy.base_metadata.stream.is_none() {
-        println!("no stream, maybe it's OCI let's try to deserialize");
+        fedora_coreos_stream_from_version(&deploy.version)
+    } else {
+        let stream = deploy
+            .base_metadata
+            .stream
+            .as_ref()
+            .ok_or_else(|| anyhow!("Missing `fedora-coreos.stream` in commit metadata"))?;
+        ensure!(!stream.is_empty(), "empty stream value");
+        Ok(stream.to_string())
     }
-
-    if deploy.container_image_reference.is_some()
-
-    let stream = deploy
-        .base_metadata
-        .stream
-        .as_ref()
-        .ok_or_else(|| anyhow!("Missing `fedora-coreos.stream` in commit metadata"))?;
-    ensure!(!stream.is_empty(), "empty stream value");
-    Ok(stream.to_string())
 }
 
-fn fedora_coreos_stream_from_oci_manifest(deploy: &Deployment) -> Result<String> {
-    let stream = deploy
-        .base_metadata
-        .stream
-        .as_ref()
-        .ok_or_else(|| anyhow!("Missing `fedora-coreos.stream` in commit metadata"))?;
-    ensure!(!stream.is_empty(), "empty stream value");
-    Ok(stream.to_string())
+fn fedora_coreos_stream_from_version(version: &String) -> Result<String> {
+    //41.20241109.3.0
+    let version_split: Vec<&str> = version.split('.').collect();
+    if version_split.len() != 4 {
+        return Err(anyhow!("{version} is not a valid CoreOS version ID"));
+    } else {
+        let stream_id: i32 = version_split[2]
+            .parse()
+            .map_err(|_| anyhow!("invalid Coreos version ID"))?;
+
+        match stream_id {
+            1 => Ok("next".to_string()),
+            2 => Ok("testing".to_string()),
+            3 => Ok("stable".to_string()),
+            _ => Err(anyhow!("This stream is not supported by Zincati")),
+        }
+    }
 }
 
 /// Parse updates stream for booted deployment from status object.
