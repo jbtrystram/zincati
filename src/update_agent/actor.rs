@@ -597,6 +597,7 @@ mod tests {
             version: "v1".to_string(),
             checksum: "ostree-checksum".to_string(),
             age_index: None,
+            is_oci: false,
         };
 
         // Transition between states with different discriminants.

@@ -620,6 +620,7 @@ mod tests {
             version: "v1".to_string(),
             checksum: "ostree-checksum".to_string(),
             age_index: None,
+            is_oci: false,
         };
         machine.update_available(update.clone());
         assert_eq!(
@@ -656,6 +657,7 @@ mod tests {
             version: "v1".to_string(),
             checksum: "ostree-checksum".to_string(),
             age_index: None,
+            is_oci: false,
         };
         let mut machine = UpdateAgentMachineState::NoNewUpdate;
 
@@ -690,6 +692,7 @@ mod tests {
             version: "v1".to_string(),
             checksum: "ostree-checksum".to_string(),
             age_index: None,
+            is_oci: false,
         };
         let mut machine = UpdateAgentMachineState::UpdateAvailable((update.clone(), 0));
         let (delay, should_jitter) = machine.get_refresh_delay(steady_interval);

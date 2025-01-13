@@ -85,6 +85,7 @@ impl Deployment {
             checksum: self.base_revision(),
             version: self.version,
             age_index: None,
+            is_oci: self.container_image_reference.is_some(),
         }
     }
 

@@ -29,6 +29,8 @@ pub struct Release {
     pub checksum: String,
     /// Release age (Cincinnati `age_index`).
     pub age_index: Option<u64>,
+    /// If the release is shipped within an OCI image
+    pub is_oci: bool,
 }
 
 impl std::cmp::Ord for Release {
@@ -90,6 +92,7 @@ impl Release {
             version: node.version,
             checksum: node.payload,
             age_index: Some(age),
+            is_oci: { scheme == OCI_SCHEME },
         };
         Ok(rel)
     }
@@ -158,11 +161,13 @@ mod tests {
                 version: "v0".to_string(),
                 checksum: "p0".to_string(),
                 age_index: Some(0),
+                is_oci: false,
             };
             let n1 = Release {
                 version: "v1".to_string(),
                 checksum: "p1".to_string(),
                 age_index: Some(1),
+                is_oci: false,
             };
             assert!(n0 < n1);
             assert!(n0 == n0);
@@ -174,11 +179,13 @@ mod tests {
                 version: "v0".to_string(),
                 checksum: "p0".to_string(),
                 age_index: Some(0),
+                is_oci: false,
             };
             let n1 = Release {
                 version: "v1".to_string(),
                 checksum: "p1".to_string(),
                 age_index: Some(0),
+                is_oci: false,
             };
             assert!(n0 < n1);
             assert!(!(n0 < n0));
@@ -189,11 +196,13 @@ mod tests {
                 version: "v0".to_string(),
                 checksum: "p0".to_string(),
                 age_index: Some(0),
+                is_oci: false,
             };
             let n1 = Release {
                 version: "v0".to_string(),
                 checksum: "p1".to_string(),
                 age_index: Some(0),
+                is_oci: false,
             };
             assert!(n0 < n1);
             assert!(!(n0 < n0));
