@@ -95,7 +95,7 @@ impl Deployment {
             .clone()
             .map(|pullspec| {
                 pullspec
-                    .strip_prefix("ostree-unverified-registry:")
+                    .strip_prefix("ostree-remote-image:fedora:docker://")
                     .map(|s| s.to_string())
             })
             .flatten()

@@ -42,8 +42,6 @@ pub struct StageDeployment {
     pub allow_downgrade: bool,
     /// Release to be staged.
     pub release: Release,
-    /// If the release is an OCI image pullspec.
-    pub oci: bool,
 }
 
 impl Message for StageDeployment {
@@ -55,7 +53,7 @@ impl Handler<StageDeployment> for RpmOstreeClient {
 
     fn handle(&mut self, msg: StageDeployment, _ctx: &mut Self::Context) -> Self::Result {
         trace!("request to stage release: {:?}", msg.release);
-        let release = super::cli_deploy::deploy_locked(msg.release, msg.allow_downgrade, msg.oci);
+        let release = super::cli_deploy::deploy_locked(msg.release, msg.allow_downgrade);
         trace!("rpm-ostree CLI returned: {:?}", release);
         release
     }
