@@ -124,10 +124,6 @@ pub struct Client {
 impl Client {
     /// Fetch an update-graph from Cincinnati.
     pub fn fetch_graph(&self) -> impl Future<Output = Result<Graph, CincinnatiError>> {
-        log::debug!(
-            "fetching the cincinnati graph with options: {:?}",
-            self.query_params
-        );
         let req = self
             .new_request(Method::GET, V1_GRAPH_PATH)
             .map_err(|e| CincinnatiError::FailedRequest(e.to_string()));
@@ -164,7 +160,6 @@ impl Client {
             let graph = response.json::<Graph>().await.map_err(|e| {
                 CincinnatiError::FailedJsonDecoding(format!("failed to decode graph: {}", e))
             })?;
-            log::trace!("debug graph:\n {:?}", graph);
             return Ok(graph);
         }
 

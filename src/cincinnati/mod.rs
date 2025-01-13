@@ -227,7 +227,6 @@ fn find_update(
         graph.edges.len()
     );
 
-    log::trace!("booted deploy is : \n{:?}", booted_depl);
     // Find booted deployment in graph.
     let (cur_position, cur_node) = match graph
         .nodes
@@ -237,7 +236,10 @@ fn find_update(
     {
         Some(current) => current,
         None => {
-            log::warn!("current deployment not found in the update graph");
+            log::warn!(
+                "booted deployment {} not found in the update graph",
+                &booted_depl.checksum
+            );
             return Ok(None);
         }
     };
@@ -282,7 +284,6 @@ fn find_update(
             .map_err(|e| CincinnatiError::FailedNodeParsing(e.to_string()))?;
         updates.insert(release);
     }
-    log::trace!("update targets: {:?}", updates);
 
     // Exclude targets in denylist.
     let new_updates = updates.difference(&denylisted_releases);
@@ -303,8 +304,6 @@ fn find_update(
         Some(rel) => rel,
         None => return Ok(None),
     };
-
-    log::debug!("Picked {:?} as the update target", next);
 
     // Check for downgrades.
     if next <= cur_release {
@@ -342,8 +341,6 @@ fn find_denylisted_releases(graph: &client::Graph, depls: BTreeSet<Release>) -> 
 fn is_same_checksum(node: &Node, checksum: &str) -> bool {
     let payload_type = node.metadata.get(SCHEME_KEY);
 
-    log::debug!("{}", node.version);
-    log::debug!("node payload {}", node.payload);
     if let Some(scheme) = payload_type {
         (scheme.as_str() == OCI_SCHEME || scheme.as_str() == CHECKSUM_SCHEME)
             && node.payload == checksum
