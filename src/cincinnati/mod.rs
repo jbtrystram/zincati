@@ -389,23 +389,28 @@ mod tests {
 
     #[test]
     fn source_node_comparison() {
-        let current = "current-sha";
+        let current = Release {
+            version: String::new(),
+            checksum: "current-sha".to_string(),
+            age_index: None,
+            is_oci: false,
+        };
 
         let mut metadata = HashMap::new();
         metadata.insert(SCHEME_KEY.to_string(), CHECKSUM_SCHEME.to_string());
         let matching = Node {
             version: "v0".to_string(),
-            payload: current.to_string(),
+            payload: current.checksum.clone(),
             metadata,
         };
-        assert!(is_same_checksum(&matching, current));
+        assert!(is_same_checksum(&matching, &current));
 
         let mismatch = Node {
             version: "v0".to_string(),
             payload: "mismatch".to_string(),
             metadata: HashMap::new(),
         };
-        assert!(!is_same_checksum(&mismatch, current));
+        assert!(!is_same_checksum(&mismatch, &current));
     }
 
     #[test]
