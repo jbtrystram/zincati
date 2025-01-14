@@ -16,7 +16,7 @@ pub use actor::{
 mod mock_tests;
 
 use crate::cincinnati::{Node, AGE_INDEX_KEY, CHECKSUM_SCHEME, OCI_SCHEME, SCHEME_KEY};
-use anyhow::{anyhow, ensure, Context, Result};
+use anyhow::{anyhow, bail, ensure, Context, Result};
 use serde::Serialize;
 use std::cmp::Ordering;
 
@@ -95,6 +95,16 @@ impl Release {
             is_oci: { scheme == OCI_SCHEME },
         };
         Ok(rel)
+    }
+    pub fn get_pullspec_hash(&self) -> Result<String> {
+        let split: Vec<&str> = self.checksum.split(":registry:").collect();
+        if split.len() != 2 {
+            bail!(
+                "Unexpected image reference {0}. Unable to handle.",
+                self.checksum
+            );
+        }
+        return Ok(split[1].to_string());
     }
 }
 

@@ -4,7 +4,7 @@ use super::{UpdateAgent, UpdateAgentInfo, UpdateAgentMachineState, UpdateAgentSt
 use crate::rpm_ostree::{self, Release};
 use crate::utils;
 use actix::prelude::*;
-use anyhow::{bail, format_err, Error, Result};
+use anyhow::{format_err, Error, Result};
 use fn_error_context::context;
 use futures::prelude::*;
 use log::trace;
@@ -478,18 +478,32 @@ impl UpdateAgentInfo {
         })?;
 
         if pending.version != release.version {
-            bail!(
+            log::error!(
                 "expected pending deployment '{}', but found '{}' instead",
                 release.version,
                 pending.version
             );
+            return Ok(false);
         }
-        if pending.checksum != release.checksum {
-            bail!(
+        // In the OCI case, the pending checksum will contain the full ostree image spec, whereas
+        // the cincinnati payload contain only the OCI pullspec.
+        if pending.is_oci {
+            let pending_pullspec = pending.get_pullspec_hash()?;
+            if pending_pullspec != release.checksum {
+                log::error!(
                 "detected checksum mismatch for pending deployment '{}', got unexpected value '{}'",
                 release.version,
                 release.checksum,
             );
+                return Ok(false);
+            }
+        } else if pending.checksum != release.checksum {
+            log::error!(
+                "detected checksum mismatch for pending deployment '{}', got unexpected value '{}'",
+                release.version,
+                release.checksum,
+            );
+            return Ok(false);
         }
 
         if self.identity.stream != stream {
@@ -558,6 +572,7 @@ impl UpdateAgentInfo {
         state: &mut UpdateAgentState,
         release: Release,
     ) -> Result<()> {
+        println!("confirming valid stream");
         // In some cases it may be impossible to validate/reject the update,
         // e.g. because of temporary issues. The outer layers of the agent will
         // try to handle these cases with retries.
@@ -565,6 +580,7 @@ impl UpdateAgentInfo {
             .is_pending_deployment_on_correct_stream(release.clone())
             .await?;
 
+        println!("is valid ? {is_valid}");
         if !is_valid {
             // Target deployment is not valid; scrub it, and remember to avoid it in the future.
             self.cleanup_pending_deployment().await;

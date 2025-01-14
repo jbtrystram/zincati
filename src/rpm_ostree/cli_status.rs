@@ -61,6 +61,7 @@ pub struct Status {
 pub struct Deployment {
     booted: bool,
     container_image_reference: Option<String>,
+    custom_origin: Option<Vec<String>>,
     base_checksum: Option<String>,
     #[serde(rename = "base-commit-meta")]
     base_metadata: BaseCommitMeta,
@@ -93,14 +94,19 @@ impl Deployment {
     pub fn base_revision(&self) -> String {
         self.container_image_reference
             .clone()
-            .map(|pullspec| {
-                pullspec
-                    .strip_prefix("ostree-remote-image:fedora:docker://")
-                    .map(|s| s.to_string())
-            })
-            .flatten()
+            // .map(|pullspec| {
+            //     pullspec
+            //         .strip_prefix("ostree-remote-image:fedora:docker://")
+            //         .map(|s| s.to_string())
+            // })
+            // .flatten()
             .or(self.base_checksum.clone())
             .unwrap_or_else(|| self.checksum.clone())
+    }
+
+    /// return the custom origin fields
+    pub fn custom_origin(&self) -> Option<Vec<String>> {
+        self.custom_origin.clone()
     }
 }
 
@@ -111,8 +117,8 @@ pub fn parse_booted(status: &Status) -> Result<Release> {
 }
 
 fn fedora_coreos_stream_from_deployment(deploy: &Deployment) -> Result<String> {
-    if deploy.base_metadata.stream.is_none() {
-        fedora_coreos_stream_from_version(&deploy.version)
+    if let Some(origin) = deploy.custom_origin.clone() {
+        fedora_coreos_stream_from_custom_origin(&origin[0])
     } else {
         let stream = deploy
             .base_metadata
@@ -124,22 +130,13 @@ fn fedora_coreos_stream_from_deployment(deploy: &Deployment) -> Result<String> {
     }
 }
 
-fn fedora_coreos_stream_from_version(version: &String) -> Result<String> {
-    //41.20241109.3.0
-    let version_split: Vec<&str> = version.split('.').collect();
-    if version_split.len() != 4 {
-        return Err(anyhow!("{version} is not a valid CoreOS version ID"));
+fn fedora_coreos_stream_from_custom_origin(origin: &String) -> Result<String> {
+    //ostree-remote-image:fedora:registry:quay.io/fedora/fedora-coreos:testing
+    let origin_split: Vec<&str> = origin.split(':').collect();
+    if origin_split.len() != 5 {
+        Err(anyhow!("{origin} is not a valid custom URL"))
     } else {
-        let stream_id: i32 = version_split[2]
-            .parse()
-            .map_err(|_| anyhow!("invalid Coreos version ID"))?;
-
-        match stream_id {
-            1 => Ok("next".to_string()),
-            2 => Ok("testing".to_string()),
-            3 => Ok("stable".to_string()),
-            _ => Err(anyhow!("This stream is not supported by Zincati")),
-        }
+        Ok(origin_split[4].to_string())
     }
 }
 
@@ -196,7 +193,7 @@ pub fn local_deployments(
 }
 
 /// Return JSON object for booted deployment.
-fn booted_status(status: &Status) -> Result<Deployment> {
+pub fn booted_status(status: &Status) -> Result<Deployment> {
     let booted = status
         .clone()
         .deployments
@@ -294,7 +291,7 @@ mod tests {
             assert_eq!(deployments.len(), 1);
             assert!(parse_booted_oci_reference(&status).unwrap().is_some());
             assert_eq!(parse_booted_oci_reference(&status).unwrap().unwrap(),
-                "ostree-unverified-registry:quay.io/fedora/fedora-coreos@sha256:d12dd2fcb57ecfde0941be604f4dcd43ce0409b86e5ee4e362184c802b80fb84")
+                "ostree-remote-image:fedora:registry:quay.io/fedora/fedora-coreos@sha256:c4a15145a232d882ccf2ed32d22c06c01a7cf62317eb966a98340ae4bd56dfa6")
         }
     }
 
@@ -311,6 +308,6 @@ mod tests {
         let status = mock_status("tests/fixtures/rpm-ostree-oci-status.json").unwrap();
         let booted = booted_status(&status).unwrap();
         let stream = fedora_coreos_stream_from_deployment(&booted).unwrap();
-        assert_eq!(stream, "stable");
+        assert_eq!(stream, "testing");
     }
 }

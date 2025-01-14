@@ -232,7 +232,7 @@ fn find_update(
         .nodes
         .iter()
         .enumerate()
-        .find(|(_, node)| is_same_checksum(node, &booted_depl.checksum))
+        .find(|(_, node)| is_same_checksum(node, &booted_depl))
     {
         Some(current) => current,
         None => {
@@ -338,14 +338,20 @@ fn find_denylisted_releases(graph: &client::Graph, depls: BTreeSet<Release>) -> 
 }
 
 /// Check whether input node matches current checksum.
-fn is_same_checksum(node: &Node, checksum: &str) -> bool {
+fn is_same_checksum(node: &Node, deploy: &Release) -> bool {
     let payload_type = node.metadata.get(SCHEME_KEY);
 
-    if let Some(scheme) = payload_type {
-        (scheme.as_str() == OCI_SCHEME || scheme.as_str() == CHECKSUM_SCHEME)
-            && node.payload == checksum
+    if let Some(schema) = payload_type {
+        if schema.as_str() == OCI_SCHEME {
+            let local_checksum = deploy.get_pullspec_hash().unwrap();
+            return node.payload == local_checksum;
+        } else if schema.as_str() == CHECKSUM_SCHEME {
+            return node.payload == deploy.checksum;
+        } else {
+            return false;
+        }
     } else {
-        false
+        return false;
     }
 }
 

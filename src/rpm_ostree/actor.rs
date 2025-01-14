@@ -52,8 +52,16 @@ impl Handler<StageDeployment> for RpmOstreeClient {
     type Result = Result<Release>;
 
     fn handle(&mut self, msg: StageDeployment, _ctx: &mut Self::Context) -> Self::Result {
+        let booted = super::cli_status::invoke_cli_status(true)?;
+        let local_deploy = super::cli_status::booted_status(&booted)?;
         trace!("request to stage release: {:?}", msg.release);
-        let release = super::cli_deploy::deploy_locked(msg.release, msg.allow_downgrade);
+        let release = super::cli_deploy::deploy_locked(
+            msg.release,
+            msg.allow_downgrade,
+            //// TODO JB i need to handle the case where those don't exist (booted deploy is pure OSTree)!
+            // also let's refactor some of the code in cli_deploy here?
+            local_deploy.custom_origin(),
+        );
         trace!("rpm-ostree CLI returned: {:?}", release);
         release
     }
