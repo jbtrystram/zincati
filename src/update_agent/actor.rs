@@ -485,19 +485,7 @@ impl UpdateAgentInfo {
             );
             return Ok(false);
         }
-        // In the OCI case, the pending checksum will contain the full ostree image URL, whereas
-        // the cincinnati payload contain only the OCI pullspec.
-        if pending.is_oci {
-            let pending_pullspec = pending.get_pullspec_hash()?;
-            if pending_pullspec != release.checksum {
-                log::error!(
-                "detected checksum mismatch for pending deployment '{}', got unexpected value '{}'",
-                release.version,
-                release.checksum,
-            );
-                return Ok(false);
-            }
-        } else if pending.checksum != release.checksum {
+        if pending.checksum != release.checksum {
             log::error!(
                 "detected checksum mismatch for pending deployment '{}', got unexpected value '{}'",
                 release.version,

@@ -70,7 +70,7 @@ impl Handler<StageDeployment> for RpmOstreeClient {
                 // remove the tag from the custom origin
                 // as it's a moving tag and we want to pin versions
                 let origin_prefix = custom_origin[0]
-                    .rsplit_once(":")
+                    .rsplit_once(':')
                     .map(|(origin, _)| origin)
                     .ok_or(anyhow::anyhow!("Invalid custom-origin-url format"))?;
 
