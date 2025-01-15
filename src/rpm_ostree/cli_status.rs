@@ -283,8 +283,8 @@ mod tests {
             let status = mock_status("tests/fixtures/rpm-ostree-oci-status.json").unwrap();
             let deployments = parse_local_deployments(&status, false);
             assert_eq!(deployments.len(), 1);
-            assert!(parse_booted_oci_reference(&status).unwrap().is_some());
-            assert_eq!(parse_booted_oci_reference(&status).unwrap().unwrap(),
+            assert!(get_booted_oci_reference(&status).unwrap().is_some());
+            assert_eq!(get_booted_oci_reference(&status).unwrap().unwrap(),
                 "ostree-remote-image:fedora:registry:quay.io/fedora/fedora-coreos@sha256:c4a15145a232d882ccf2ed32d22c06c01a7cf62317eb966a98340ae4bd56dfa6")
         }
     }
@@ -298,10 +298,22 @@ mod tests {
     }
 
     #[test]
-    fn mock_booted_oci_updates_stream() {
+    fn mock_booted_oci_deployment() {
         let status = mock_status("tests/fixtures/rpm-ostree-oci-status.json").unwrap();
         let booted = booted_status(&status).unwrap();
         let stream = fedora_coreos_stream_from_deployment(&booted).unwrap();
         assert_eq!(stream, "testing");
+        let custom_origin = booted.custom_origin();
+        assert!(custom_origin.is_some());
+        let custom_origin = custom_origin.unwrap();
+        assert_eq!(custom_origin.len(), 2);
+        assert_eq!(
+            custom_origin[0],
+            "ostree-remote-image:fedora:registry:quay.io/fedora/fedora-coreos:testing"
+        );
+        assert_eq!(
+            custom_origin[1],
+            "Fedora CoreOS Testing stream through OCI images"
+        );
     }
 }
