@@ -343,15 +343,17 @@ fn is_same_checksum(node: &Node, deploy: &Release) -> bool {
 
     if let Some(schema) = payload_type {
         if schema.as_str() == OCI_SCHEME {
-            let local_checksum = deploy.get_pullspec_hash().unwrap();
-            return node.payload == local_checksum;
+            // This unwrap is safe since we get the OCI graph only if we're
+            // booted on OCI already.
+            let local_checksum = deploy.get_pullspec_hash().unwrap_or_default();
+            node.payload == local_checksum
         } else if schema.as_str() == CHECKSUM_SCHEME {
             return node.payload == deploy.checksum;
         } else {
             return false;
         }
     } else {
-        return false;
+        false
     }
 }
 

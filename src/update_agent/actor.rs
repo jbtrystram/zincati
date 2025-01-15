@@ -485,7 +485,7 @@ impl UpdateAgentInfo {
             );
             return Ok(false);
         }
-        // In the OCI case, the pending checksum will contain the full ostree image spec, whereas
+        // In the OCI case, the pending checksum will contain the full ostree image URL, whereas
         // the cincinnati payload contain only the OCI pullspec.
         if pending.is_oci {
             let pending_pullspec = pending.get_pullspec_hash()?;
@@ -572,7 +572,6 @@ impl UpdateAgentInfo {
         state: &mut UpdateAgentState,
         release: Release,
     ) -> Result<()> {
-        println!("confirming valid stream");
         // In some cases it may be impossible to validate/reject the update,
         // e.g. because of temporary issues. The outer layers of the agent will
         // try to handle these cases with retries.
@@ -580,7 +579,6 @@ impl UpdateAgentInfo {
             .is_pending_deployment_on_correct_stream(release.clone())
             .await?;
 
-        println!("is valid ? {is_valid}");
         if !is_valid {
             // Target deployment is not valid; scrub it, and remember to avoid it in the future.
             self.cleanup_pending_deployment().await;

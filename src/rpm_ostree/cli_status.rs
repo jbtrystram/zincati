@@ -94,12 +94,6 @@ impl Deployment {
     pub fn base_revision(&self) -> String {
         self.container_image_reference
             .clone()
-            // .map(|pullspec| {
-            //     pullspec
-            //         .strip_prefix("ostree-remote-image:fedora:docker://")
-            //         .map(|s| s.to_string())
-            // })
-            // .flatten()
             .or(self.base_checksum.clone())
             .unwrap_or_else(|| self.checksum.clone())
     }
@@ -147,7 +141,7 @@ pub fn parse_booted_updates_stream(status: &Status) -> Result<String> {
 }
 
 /// Parse oci image reference for booted deployment from status object.
-pub fn parse_booted_oci_reference(status: &Status) -> Result<Option<String>> {
+pub fn get_booted_oci_reference(status: &Status) -> Result<Option<String>> {
     booted_status(status).map(|s| s.container_image_reference)
 }
 

@@ -2,7 +2,7 @@
 //! `rpm-ostree deploy --register-driver`.
 
 use super::Release;
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 use once_cell::sync::Lazy;
 use prometheus::IntCounter;
 use std::time::Duration;
@@ -37,12 +37,9 @@ pub fn deploy_locked(
     allow_downgrade: bool,
     origin: Option<Vec<String>>,
 ) -> Result<Release> {
-    if release.is_oci && origin.is_none() {
-        bail!("Zincati only supports OCI updates if rpm-ostree custom-origin-url is set")
-    }
     DEPLOY_ATTEMPTS.inc();
 
-    let result = invoke_cli_deploy(release, allow_downgrade, origin.unwrap());
+    let result = invoke_cli_deploy(release, allow_downgrade, origin);
     if result.is_err() {
         DEPLOY_FAILURES.inc();
     }
@@ -104,32 +101,22 @@ fn invoke_cli_register() -> Result<()> {
 fn invoke_cli_deploy(
     release: Release,
     allow_downgrade: bool,
-    custom_origin: Vec<String>,
+    custom_origin: Option<Vec<String>>,
 ) -> Result<Release> {
     fail_point!("deploy_locked_err", |_| bail!("deploy_locked_err"));
     fail_point!("deploy_locked_ok", |_| Ok(release.clone()));
 
     let mut cmd = std::process::Command::new("rpm-ostree");
     if release.is_oci {
-        let pullspec_split: Vec<&str> = release.checksum.split("@sha256:").collect();
-        if !custom_origin[0].contains(pullspec_split[0]) {
-            bail!("The update pullspec provided does not match local custom-origin-url",);
+        if let Some(origin) = custom_origin {
+            cmd.arg("rebase")
+                .arg(&release.checksum)
+                .arg("--lock-finalization")
+                .arg("--custom-origin-url")
+                .arg(origin[0].clone())
+                .arg("--custom-origin-description")
+                .arg(origin[1].clone());
         }
-        let origin_prefix = custom_origin[0]
-            .rsplit_once(":")
-            .map(|(origin, _)| origin)
-            .ok_or(anyhow!("Invalid custom-origin-url format"))?;
-
-        let sha_digest = pullspec_split[1];
-        let full_rebase_spec = format!("{origin_prefix}@sha256:{sha_digest}");
-
-        cmd.arg("rebase")
-            .arg(full_rebase_spec)
-            .arg("--lock-finalization")
-            .arg("--custom-origin-url")
-            .arg(custom_origin[0].clone())
-            .arg("--custom-origin-description")
-            .arg(custom_origin[1].clone());
     } else {
         cmd.arg("deploy")
             .arg("--lock-finalization")

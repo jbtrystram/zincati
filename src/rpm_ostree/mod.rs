@@ -2,7 +2,7 @@ mod cli_deploy;
 mod cli_finalize;
 mod cli_status;
 pub use cli_status::{
-    invoke_cli_status, parse_booted, parse_booted_oci_reference, parse_booted_updates_stream,
+    get_booted_oci_reference, invoke_cli_status, parse_booted, parse_booted_updates_stream,
     SystemInoperable,
 };
 
@@ -104,7 +104,7 @@ impl Release {
                 self.checksum
             );
         }
-        return Ok(split[1].to_string());
+        Ok(split[1].to_string())
     }
 }
 

@@ -54,14 +54,50 @@ impl Handler<StageDeployment> for RpmOstreeClient {
     fn handle(&mut self, msg: StageDeployment, _ctx: &mut Self::Context) -> Self::Result {
         let booted = super::cli_status::invoke_cli_status(true)?;
         let local_deploy = super::cli_status::booted_status(&booted)?;
-        trace!("request to stage release: {:?}", msg.release);
-        let release = super::cli_deploy::deploy_locked(
-            msg.release,
-            msg.allow_downgrade,
-            //// TODO JB i need to handle the case where those don't exist (booted deploy is pure OSTree)!
-            // also let's refactor some of the code in cli_deploy here?
-            local_deploy.custom_origin(),
-        );
+
+        let custom_origin = local_deploy.custom_origin();
+        let release = if msg.release.is_oci {
+            if let Some(custom_origin) = custom_origin {
+                // make sure the update comes from the same origin
+                let release_pullspec_split: Vec<&str> =
+                    msg.release.checksum.split("@sha256:").collect();
+                if !custom_origin[0].contains(release_pullspec_split[0]) {
+                    anyhow::bail!(
+                        "The update pullspec provided does not match local custom-origin-url",
+                    );
+                }
+
+                // remove the tag from the custom origin
+                // as it's a moving tag and we want to pin versions
+                let origin_prefix = custom_origin[0]
+                    .rsplit_once(":")
+                    .map(|(origin, _)| origin)
+                    .ok_or(anyhow::anyhow!("Invalid custom-origin-url format"))?;
+
+                // append the release digest to the custom origin url
+                let release_sha_digest = release_pullspec_split[1];
+                let full_rebase_spec = format!("{origin_prefix}@sha256:{release_sha_digest}");
+
+                // re-craft a release object with the pullspec
+                let oci_release = Release {
+                    version: msg.release.version.clone(),
+                    checksum: full_rebase_spec,
+                    age_index: msg.release.age_index,
+                    is_oci: true,
+                };
+                trace!("request to stage release: {:?}", oci_release);
+                super::cli_deploy::deploy_locked(
+                    oci_release,
+                    msg.allow_downgrade,
+                    Some(custom_origin),
+                )
+            } else {
+                anyhow::bail!("Zincati does not support OCI updates if rpm-ostree custom origin is not set on local deployement.");
+            }
+        } else {
+            trace!("request to stage release: {:?}", msg.release);
+            super::cli_deploy::deploy_locked(msg.release, msg.allow_downgrade, None)
+        };
         trace!("rpm-ostree CLI returned: {:?}", release);
         release
     }

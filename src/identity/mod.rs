@@ -106,7 +106,7 @@ impl Identity {
         let platform = platform::read_id("/proc/cmdline")?;
         let stream = rpm_ostree::parse_booted_updates_stream(&status)
             .context("failed to introspect OS updates stream")?;
-        let oci = rpm_ostree::parse_booted_oci_reference(&status)
+        let oci = rpm_ostree::get_booted_oci_reference(&status)
             .context("failed to introspect booted OCI reference")?
             .is_some();
 
