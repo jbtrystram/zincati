@@ -170,7 +170,7 @@ mod tests {
             age_index: None,
             is_oci: false,
         };
-        let result = deploy_locked(release, true);
+        let result = deploy_locked(release, true, None);
         assert!(result.is_err());
         assert!(DEPLOY_ATTEMPTS.get() >= 1);
         assert!(DEPLOY_FAILURES.get() >= 1);
@@ -188,7 +188,7 @@ mod tests {
             age_index: None,
             is_oci: false,
         };
-        let result = deploy_locked(release.clone(), true).unwrap();
+        let result = deploy_locked(release.clone(), true, None).unwrap();
         assert_eq!(result, release);
         assert!(DEPLOY_ATTEMPTS.get() >= 1);
     }
