@@ -232,7 +232,13 @@ fn find_update(
         .find(|(_, node)| is_same_checksum(node, &booted_depl.checksum))
     {
         Some(current) => current,
-        None => return Ok(None),
+        None => {
+            log::warn!(
+                "booted deployment {} not found in the update graph",
+                &booted_depl.payload
+            );
+            return Ok(None);
+        }
     };
     drop(booted_depl);
     let cur_release = Release::from_cincinnati(cur_node.clone())
