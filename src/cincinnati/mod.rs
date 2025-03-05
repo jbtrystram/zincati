@@ -356,8 +356,8 @@ fn find_denylisted_releases(graph: &client::Graph, depls: BTreeSet<Release>) -> 
 fn is_same_checksum(node: &Node, deploy: &Release) -> bool {
     match node.metadata.get(SCHEME_KEY) {
         Some(scheme) if scheme == OCI_SCHEME => {
-            if let Ok(Some(local_digest)) = deploy.get_image_reference() {
-                local_digest == node.payload
+            if let Ok(Some(local_imgref)) = &deploy.get_image_reference() {
+                local_imgref == &node.payload
             } else {
                 false
             }

@@ -32,7 +32,7 @@ pub fn finalize_deployment(release: Release) -> Result<Release> {
             let staged = super::cli_status::get_staged_deployment(&status);
             if let Some(staged_depl) = staged {
                 let staged_imgref = staged_depl
-                    .container_image_reference()
+                    .container_ostree_image_reference_digest()
                     .map(|i| i.to_string());
                 if staged_imgref.as_ref() == Some(release_imgref) {
                     cmd.arg(staged_depl.ostree_checksum())

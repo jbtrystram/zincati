@@ -67,11 +67,11 @@ impl std::cmp::Ord for Release {
         if self.payload != other.payload {
             let self_payload = match &self.payload {
                 Payload::Checksum(str) => str,
-                Payload::Pullspec(str) => str,
+                Payload::Pullspec(reference) => reference,
             };
             let other_payload = match &other.payload {
                 Payload::Checksum(str) => str,
-                Payload::Pullspec(str) => str,
+                Payload::Pullspec(reference) => reference,
             };
 
             return self_payload.cmp(other_payload);

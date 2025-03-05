@@ -75,7 +75,7 @@ impl Handler<StageDeployment> for RpmOstreeClient {
                 // to prepend the OSTree signature source so rpm-ostree will verify the signature of
                 // the OSTree commit wrapped inside the container.
 
-                // let's craft a propper ostree imgref object
+                // crat a new ostree imgref object with the new digest we'll rebase to
                 let rebase_target = OstreeImageReference {
                     sigverify: local_imgref.sigverify,
                     imgref: ostree_ext::container::ImageReference {

@@ -5,7 +5,6 @@ use crate::rpm_ostree::{self, Release};
 use crate::utils;
 use actix::prelude::*;
 use anyhow::{bail, format_err, Error, Result};
-use fn_error_context::context;
 use futures::prelude::*;
 use log::trace;
 use prometheus::{IntCounter, IntCounterVec, IntGauge};
@@ -552,7 +551,7 @@ impl UpdateAgentInfo {
     ///
     /// If valid, advance the state-machine. If mistaken, clean up the pending deployment.
     /// If unsure, bubble up errors in order to retry later.
-    #[context("failed to confirm stream")]
+    //#[context("failed to confirm stream")]
     async fn confirm_valid_stream(
         &self,
         state: &mut UpdateAgentState,

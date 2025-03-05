@@ -116,7 +116,7 @@ fn invoke_cli_deploy(
                     .arg("--custom-origin-description")
                     .arg(origin.description.clone());
             } else {
-                log::warn!("No custom-origin information to attach to deployment.")
+                log::warn!("No custom-origin information to attach to new deployment.")
             }
         }
         Payload::Checksum(checksum) => {
